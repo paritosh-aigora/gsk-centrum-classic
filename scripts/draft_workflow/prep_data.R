@@ -93,11 +93,22 @@ pre_x_data <- raw_panel_data %>%
   select(ID_X, Session, Stim, everything()) %>%
   arrange(ID_X, Session, Stim) %>% 
   pivot_longer(one_of(pre_x_vars), names_to = "Codename", values_to = "Value") %>% 
-  left_join(select(panel_details, -Cluster)) %>% 
+  left_join(select(panel_details, -Cluster, -Min_val,-Max_val)) %>% 
   select(-Codename) %>% 
   pivot_wider(names_from = "Variable", values_from = "Value")
 
-
+# temp <- raw_panel_data %>%
+#   select(one_of(header_x_vars), one_of(pre_x_vars)) %>%
+#   mutate(Stim = as.numeric(as.factor(gen_code))) %>%
+#   select(-gen_code) %>%
+#   rename(ID_X = Panelist) %>%
+#   mutate_at(c("Session", "Stim"), as.factor) %>%
+#   select(ID_X, Session, Stim, everything()) %>%
+#   arrange(ID_X, Session, Stim) %>% 
+#   pivot_longer(one_of(pre_x_vars), names_to = "Codename", values_to = "Value") %>% 
+#   left_join(select(panel_details, -Cluster, -Min_val, -Max_val)) %>% 
+#   select(-Codename) %>% 
+#   pivot_wider(names_from = "Variable", values_from = "Value")
 
 # set key for x dataset
 x_key <- pre_x_data %>%
@@ -311,7 +322,7 @@ if (any(demo_types == "Factor")){
   factor_data <- raw_factor_data %>% 
     select(ID_Y, new_var) %>% 
     mutate(value = 1) %>% 
-    pivot_wider(names_from = new_var, values_from = value, values_fill = 0) 
+    pivot_wider(names_from = new_var, values_from = value, values_fill = 0)
   
 } else {
   

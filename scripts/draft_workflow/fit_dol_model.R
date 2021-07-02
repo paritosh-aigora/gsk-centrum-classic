@@ -245,7 +245,7 @@ means_comp_plot_test <- means_comp_mat_test %>%
   ggplot(aes(x = Orig, y = Pred, label = Stim_Name)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  ggrepel::geom_label_repel(label.r = 0) +
+  ggrepel::geom_label_repel(label.r = 0, label.size = 0.2, max.overlaps = 20) +
   theme(
     panel.background = element_blank(),
     panel.grid = element_blank(),

@@ -1,6 +1,7 @@
 # data cleaning, conditioning, and exploration ----------------------------
 
 # set printing options
+
 print_panel_plots <- TRUE
 print_cons_plots <- FALSE
 
@@ -700,6 +701,8 @@ cleaned_keys$d <- prepped_keys$d %>%
 
 demo_key <- cleaned_keys$d %>%
   deframe()
+
+rownames(cleaned_data$d) <- NULL
 
 demo_data <- cleaned_data$d %>%
   column_to_rownames(var = "ID_Y")

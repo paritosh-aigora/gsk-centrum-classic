@@ -34,6 +34,24 @@ range_data <- cleaned_data$x %>%
   mutate(Variable = tools::toTitleCase(var_name)) %>%
   select(Variable, Max, Range)
 
+
+# range_data <- cleaned_data$x %>%
+#   group_by(Stim) %>%
+#   summarize_all(mean, na.rm = TRUE) %>%
+#   ungroup() %>%
+#   select(Stim, starts_with("X")) %>%
+#   pivot_longer(starts_with("X"), names_to = "var", values_to = "value") %>%
+#   left_join(cleaned_keys$x, by = c("var" = "var")) %>% 
+#   left_join(panel_details, by = c("var_name"="Variable")) %>% 
+#   group_by(var) %>%
+#   #summarize(Min = min(value), Max = max(value)) %>%
+#   mutate(Max = Max_val, Min = Min_val) %>% 
+#   mutate(Range = Max - Min) %>%
+#   select(var, Max, Range) %>%
+#   left_join(cleaned_keys$x) %>%
+#   mutate(Variable = tools::toTitleCase(var_name)) %>%
+#   select(Variable, Max, Range)
+
 # load variable importance info ----
 
 visualization_info_path <-

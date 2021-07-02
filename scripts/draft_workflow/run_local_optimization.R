@@ -134,7 +134,15 @@ sim_means_data <- sim_prcomp_data %>%
   select("Stim", one_of(cleaned_keys$x$var_name)) %>% 
   set_names(c("Stim", cleaned_keys$x$var)) %>% 
   mutate(var = sim_prcomp_data$var, levels = sim_prcomp_data$levels) %>% 
-  select(Stim, var, levels, everything())
+  select(Stim, var, levels, everything()) %>% 
+  pivot_longer(cols = starts_with("X"), names_to = "Variable", values_to = "Value") %>%
+  left_join(cleaned_keys$x, by = c("Variable" = "var")) %>% 
+  left_join(panel_details, by = c("var_name"="Variable")) %>% 
+  mutate(Value = pmin(Value, Max_val)) %>%
+  mutate(Value = pmax(Value, Min_val)) %>% 
+  #mutate(Value = (Value - Min_val)/ (Max_val - Min_val)) %>% 
+  select(-var_name, -Codename, -Cluster, -Min_val, -Max_val) %>% 
+  pivot_wider(names_from = Variable, values_from = Value)
 
 # split data for looping
 

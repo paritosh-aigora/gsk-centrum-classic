@@ -27,7 +27,20 @@ panel_data <- cleaned_data$x %>%
   left_join(cleaned_keys$s) %>%
   select(Stim_Name, starts_with("X"))
 
-# calculate range data
+
+# panel_data <- cleaned_data$x %>%
+#   select(Stim, starts_with("X")) %>%
+#   group_by(Stim) %>%
+#   summarize_all(mean, na.rm = TRUE) %>%
+#   pivot_longer(cols = starts_with("X"), names_to = "Variable", values_to = "Value") %>%
+#   left_join(cleaned_keys$x, by = c("Variable" = "var")) %>%
+#   left_join(panel_details, by = c("var_name"="Variable")) %>%
+#   mutate(Value = (Value - Min_val) / (Max_val - Min_val)) %>%
+#   select(Stim, Variable, Value) %>%
+#   ungroup() %>%
+#   left_join(cleaned_keys$s) %>%
+#   #select(Stim_Name, starts_with("X")) %>%
+#   pivot_wider(names_from = "Variable", values_from = "Value")
 
 range_data <- cleaned_data$x %>%
   group_by(Stim) %>%
@@ -42,6 +55,24 @@ range_data <- cleaned_data$x %>%
   left_join(cleaned_keys$x) %>%
   mutate(Variable = tools::toTitleCase(var_name)) %>%
   select(Variable, Max, Range)
+
+
+# range_data <- cleaned_data$x %>%
+#   group_by(Stim) %>%
+#   summarize_all(mean, na.rm = TRUE) %>%
+#   ungroup() %>%
+#   select(Stim, starts_with("X")) %>%
+#   pivot_longer(starts_with("X"), names_to = "var", values_to = "value") %>%
+#   left_join(cleaned_keys$x, by = c("var" = "var")) %>% 
+#   left_join(panel_details, by = c("var_name"="Variable")) %>% 
+#   group_by(var) %>%
+#   #summarize(Min = min(value), Max = max(value)) %>%
+#   mutate(Max = Max_val, Min = Min_val) %>% 
+#   mutate(Range = Max - Min) %>%
+#   select(var, Max, Range) %>%
+#   left_join(cleaned_keys$x) %>%
+#   mutate(Variable = tools::toTitleCase(var_name)) %>%
+#   select(Variable, Max, Range)
 
 # load variable importance info ----
 
@@ -94,7 +125,7 @@ make_local_opt_chart <-
     
       } else {
         
-    #browser()
+    
     
     local_info <- local_opt %>%
       slice(1) %>%
@@ -125,13 +156,14 @@ make_local_opt_chart <-
       mutate(Max = pmax(Optimum, Max))
     
     flag_thresh <- 0.05
-    
+    #browser()
     o_data <- opt_data %>%
       mutate(alpha = if_else(abs(Value - Optimum) >= prop_thresh * Range, 1, alpha_val)) %>%
       rename(Sample = Value) %>%
-      mutate(Variable = fct_reorder(factor(Variable), Importance)) %>%
+      
       mutate(Diff = abs(Sample - Optimum),
-             flag = (Diff / Range <= flag_thresh)) %>%
+             flag = (Diff <= flag_thresh)) %>%
+      mutate(Variable = fct_reorder(factor(Variable), Diff)) %>%
       pivot_longer(Sample:Optimum,
                    names_to = "Source",
                    values_to = "Value") %>%
@@ -221,7 +253,7 @@ make_local_opt_chart <-
       guides(alpha = FALSE)
     
     prof_comp_plot_full
-    
+    #browser()
     var_imp_plot_s_data <- var_imp_info %>%
       filter(Type == "Panel") %>%
       mutate(value = value / sum(value), text = format_percent(value)) %>%
@@ -252,59 +284,59 @@ make_local_opt_chart <-
       
     }
     
-    var_imp_plot_s <- temp_p +
-      geom_bar(stat = "identity", position = "dodge") +
-      coord_flip() +
-      scale_x_discrete(name = "") +
-      scale_y_continuous(name = "",
-                         labels = scales::label_percent(accuracy = 1)) +
-      scale_fill_manual(
-        values = c(gsk_purple, gsk_teal),
-        breaks = c("Sensory", "Respondent"),
-        labels = c("Importance", "Importance"),
-        name = ""
-      ) +
-      geom_text(
-        aes(
-          x = var,
-          y = value,
-          hjust = 1,
-          vjust = 0,
-          label = text
-        ),
-        #fill = "white",
-        color = text_col,
-        size = 0.2 * font_size,
-        family = font_name,
-        #label.r = unit(0, "lines")
-      ) +
-      theme(
-        axis.line = element_blank(),
-        panel.background = element_blank(),
-        plot.background = element_rect(fill = body_bg_col, color = body_bg_col),
-        panel.grid = element_blank(),
-        legend.background = element_rect(fill = body_bg_col, color = body_bg_col),
-        legend.key = element_rect(fill = body_bg_col, color = body_bg_col),
-        legend.box.background = element_rect(fill = body_bg_col, color = body_bg_col),
-        axis.ticks = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.text = element_text(
-          size = font_size,
-          family = font_name,
-          color = text_col
-        ),
-        axis.title = element_blank(),
-        legend.title = element_blank(),
-        panel.border = element_blank(),
-        legend.position = "bottom"
-      ) +
-      scale_y_reverse() +
-      guides(alpha = FALSE)
+    # var_imp_plot_s <- temp_p +
+    #   geom_bar(stat = "identity", position = "dodge") +
+    #   coord_flip() +
+    #   scale_x_discrete(name = "") +
+    #   scale_y_continuous(name = "",
+    #                      labels = scales::label_percent(accuracy = 1)) +
+    #   scale_fill_manual(
+    #     values = c(gsk_purple, gsk_teal),
+    #     breaks = c("Sensory", "Respondent"),
+    #     labels = c("Importance", "Importance"),
+    #     name = ""
+    #   ) +
+    #   geom_text(
+    #     aes(
+    #       x = var,
+    #       y = value,
+    #       hjust = 1,
+    #       vjust = 0,
+    #       label = text
+    #     ),
+    #     #fill = "white",
+    #     color = text_col,
+    #     size = 0.2 * font_size,
+    #     family = font_name,
+    #     #label.r = unit(0, "lines")
+    #   ) +
+    #   theme(
+    #     axis.line = element_blank(),
+    #     panel.background = element_blank(),
+    #     plot.background = element_rect(fill = body_bg_col, color = body_bg_col),
+    #     panel.grid = element_blank(),
+    #     legend.background = element_rect(fill = body_bg_col, color = body_bg_col),
+    #     legend.key = element_rect(fill = body_bg_col, color = body_bg_col),
+    #     legend.box.background = element_rect(fill = body_bg_col, color = body_bg_col),
+    #     axis.ticks = element_blank(),
+    #     axis.text = element_blank(),
+    #     axis.ticks.x = element_blank(),
+    #     legend.text = element_text(
+    #       size = font_size,
+    #       family = font_name,
+    #       color = text_col
+    #     ),
+    #     axis.title = element_blank(),
+    #     legend.title = element_blank(),
+    #     panel.border = element_blank(),
+    #     legend.position = "bottom"
+    #   ) +
+    #   scale_y_reverse() +
+    #   guides(alpha = FALSE)
     
-    var_imp_plot_s
+    #var_imp_plot_s
     
-    local_opt_chart <- var_imp_plot_s + prof_comp_plot_full +
+    local_opt_chart <-  prof_comp_plot_full +
       plot_layout(ncol = 2, widths = c(4, 5)) +
       plot_annotation(
         title = str_c(
