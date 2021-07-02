@@ -126,6 +126,27 @@ for (row_ind in 1:nrow(poss_levels_mat)) {
   
 }
 
+# calculate minimal and maximal value for variables
+
+vars_range <- means_data_long %>%
+  group_by(var) %>%
+  summarise(
+    min_data = min(actual),
+    max_data = max(actual)
+  ) %>%
+  mutate(range = max_data - min_data) %>%
+  mutate(
+    min_data = min_data - 0.05 * range,
+    max_data = max_data + 0.05 * range
+  ) %>% 
+  left_join(cleaned_keys$x, by = "var") %>% 
+  left_join(panel_details, by = c("var_name"="Variable")) %>%
+  mutate(
+    Min_val = pmax(Min_val, min_data),
+    Max_val = pmin(Max_val, max_data)
+  ) %>%
+  select(var, Min_val, Max_val)
+
 # convert possible component levels back to original variables
 
 sim_means_data <- sim_prcomp_data %>% 
@@ -136,12 +157,10 @@ sim_means_data <- sim_prcomp_data %>%
   mutate(var = sim_prcomp_data$var, levels = sim_prcomp_data$levels) %>% 
   select(Stim, var, levels, everything()) %>% 
   pivot_longer(cols = starts_with("X"), names_to = "Variable", values_to = "Value") %>%
-  left_join(cleaned_keys$x, by = c("Variable" = "var")) %>% 
-  left_join(panel_details, by = c("var_name"="Variable")) %>% 
+  left_join(vars_range, by = c("Variable" = "var")) %>% 
   mutate(Value = pmin(Value, Max_val)) %>%
   mutate(Value = pmax(Value, Min_val)) %>% 
-  #mutate(Value = (Value - Min_val)/ (Max_val - Min_val)) %>% 
-  select(-var_name, -Codename, -Cluster, -Min_val, -Max_val) %>% 
+  select(-Min_val, -Max_val) %>% 
   pivot_wider(names_from = Variable, values_from = Value)
 
 # split data for looping

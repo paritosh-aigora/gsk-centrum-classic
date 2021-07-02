@@ -42,20 +42,28 @@ panel_data <- cleaned_data$x %>%
 #   #select(Stim_Name, starts_with("X")) %>%
 #   pivot_wider(names_from = "Variable", values_from = "Value")
 
-range_data <- cleaned_data$x %>%
-  group_by(Stim) %>%
-  summarize_all(mean, na.rm = TRUE) %>%
-  ungroup() %>%
-  select(Stim, starts_with("X")) %>%
+range_data <- panel_data %>%
+  select(Stim_Name, starts_with("X")) %>%
   pivot_longer(starts_with("X"), names_to = "var", values_to = "value") %>%
   group_by(var) %>%
-  summarize(Min = min(value), Max = max(value)) %>%
+summarise(
+  min_data = min(value),
+  max_data = max(value)
+) %>%
+  mutate(range = max_data - min_data) %>%
+  mutate(
+    min_data = min_data - 0.05 * range,
+    max_data = max_data + 0.05 * range
+  ) %>% 
+  left_join(cleaned_keys$x, by = "var") %>% 
+  left_join(panel_details, by = c("var_name"="Variable")) %>%
+  mutate(
+    Min = pmax(Min_val, min_data),
+    Max = pmin(Max_val, max_data)
+  ) %>%
   mutate(Range = Max - Min) %>%
-  select(var, Max, Range) %>%
-  left_join(cleaned_keys$x) %>%
   mutate(Variable = tools::toTitleCase(var_name)) %>%
-  select(Variable, Max, Range)
-
+  select(Variable, Min, Max, Range)
 
 # range_data <- cleaned_data$x %>%
 #   group_by(Stim) %>%
@@ -152,8 +160,7 @@ make_local_opt_chart <-
       left_join(cleaned_keys$x) %>%
       mutate(Variable = tools::toTitleCase(var_name)) %>%
       select(Variable, Optimum, Value) %>%
-      inner_join(rel_var_imp_info) %>% 
-      mutate(Max = pmax(Optimum, Max))
+      inner_join(rel_var_imp_info)
     
     flag_thresh <- 0.05
     #browser()
@@ -161,16 +168,14 @@ make_local_opt_chart <-
       mutate(alpha = if_else(abs(Value - Optimum) >= prop_thresh * Range, 1, alpha_val)) %>%
       rename(Sample = Value) %>%
       
-      mutate(Diff = abs(Sample - Optimum),
+      mutate(Diff = abs(Sample - Optimum)/Range,
              flag = (Diff <= flag_thresh)) %>%
       mutate(Variable = fct_reorder(factor(Variable), Diff)) %>%
-      pivot_longer(Sample:Optimum,
+      pivot_longer(c(Sample, Optimum),
                    names_to = "Source",
                    values_to = "Value") %>%
-      mutate(Value = pmax(Value, opt_min)) %>%
-      mutate(Value = pmin(Value, opt_max)) %>% 
       mutate(
-        plot_value = Value / Max,
+        plot_value = (Value - Min) / Range,
         plot_label = formatC(
           Value,
           format = "f",
@@ -254,36 +259,36 @@ make_local_opt_chart <-
     
     prof_comp_plot_full
     #browser()
-    var_imp_plot_s_data <- var_imp_info %>%
-      filter(Type == "Panel") %>%
-      mutate(value = value / sum(value), text = format_percent(value)) %>%
-      filter(value >= imp_thresh) %>%
-      inner_join(o_data %>%  distinct(Variable, alpha), by = c("var" = "Variable")) %>%
-      mutate(Type = ifelse(Type == "Panel", "Sensory", Type)) %>%
-      unique()
-    
-    if (min(var_imp_plot_s_data$alpha) == 1){
-      
-    temp_p <- var_imp_plot_s_data %>%
-      ggplot(aes(
-        x = var,
-        y = value,
-        fill = Type
-      ))
-      
-    } else {
-      
-      temp_p <- var_imp_plot_s_data %>%
-        ggplot(aes(
-          x = var,
-          y = value,
-          fill = Type,
-          alpha = alpha
-        ))
-      
-      
-    }
-    
+    # var_imp_plot_s_data <- var_imp_info %>%
+    #   filter(Type == "Panel") %>%
+    #   mutate(value = value / sum(value), text = format_percent(value)) %>%
+    #   filter(value >= imp_thresh) %>%
+    #   inner_join(o_data %>%  distinct(Variable, alpha), by = c("var" = "Variable")) %>%
+    #   mutate(Type = ifelse(Type == "Panel", "Sensory", Type)) %>%
+    #   unique()
+    # 
+    # if (min(var_imp_plot_s_data$alpha) == 1){
+    #   
+    # temp_p <- var_imp_plot_s_data %>%
+    #   ggplot(aes(
+    #     x = var,
+    #     y = value,
+    #     fill = Type
+    #   ))
+    #   
+    # } else {
+    #   
+    #   temp_p <- var_imp_plot_s_data %>%
+    #     ggplot(aes(
+    #       x = var,
+    #       y = value,
+    #       fill = Type,
+    #       alpha = alpha
+    #     ))
+    #   
+    #   
+    # }
+    # 
     # var_imp_plot_s <- temp_p +
     #   geom_bar(stat = "identity", position = "dodge") +
     #   coord_flip() +
@@ -337,7 +342,7 @@ make_local_opt_chart <-
     #var_imp_plot_s
     
     local_opt_chart <-  prof_comp_plot_full +
-      plot_layout(ncol = 2, widths = c(4, 5)) +
+      # plot_layout(ncol = 2, widths = c(4, 5)) +
       plot_annotation(
         title = str_c(
           "Predicted liking improvement of ",
